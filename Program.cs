@@ -1,4 +1,5 @@
-﻿using System.Net.Sockets;
+﻿using System.ComponentModel.Design;
+using System.Net.Sockets;
 
 namespace Seminar1Client;
 
@@ -45,8 +46,15 @@ internal class Program
 
       if (!string.IsNullOrEmpty(message))
       {
-        writer.WriteLine(message);
-        writer.Flush();
+        if (message.ToLower() == "/exit")
+        {
+          Environment.Exit(0);
+        }
+        else
+        {
+          writer.WriteLine(message);
+          writer.Flush();
+        }
       }
     }
   }
