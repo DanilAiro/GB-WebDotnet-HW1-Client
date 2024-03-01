@@ -1,86 +1,32 @@
-﻿using System.ComponentModel.Design;
-using System.Net.Sockets;
+﻿using Client;
+using System.Net;
 
 namespace Seminar1Client;
-
-internal class Program
+public class Program
 {
-  static TcpClient tcpClient = new TcpClient();
-  static bool isRunning = true;
-  static long attempts = 10;
-
+  
   static async Task Main(string[] args)
   {
-    tcpClient.Connect("localhost", 55555);
+    ChatClient chatClient = new();
+    CancellationTokenSource cts = new();
+    CancellationToken ct = cts.Token;
 
-    Console.WriteLine("Запущен");
-
-    _ = Task.Run(() => GetMessageFromServer());
-
-    _ = Task.Run(() => SendMessageToServer());
-
-    await Task.Delay(-1);
-  }
-
-  public static void GetMessageFromServer()
-  {
     try
     {
-      while (isRunning)
-      {
-        ProcessServer();
-      }
-    }
-    catch (Exception ex)
-    {
-      Console.WriteLine(ex.Message);
-    }
-  }
+      chatClient.Run(ct);
 
-  public static void SendMessageToServer()
-  {
-    while (isRunning)
-    {
-      var writer = new StreamWriter(tcpClient.GetStream());
-      string? message = Console.ReadLine();
-
-      if (!string.IsNullOrEmpty(message))
-      {
-        if (message.ToLower() == "/exit")
-        {
-          Environment.Exit(0);
-        }
-        else
-        {
-          writer.WriteLine(message);
-          writer.Flush();
-        }
-      }
+      while (true)
+        if (chatClient.ThreadException != null)
+          throw chatClient.ThreadException;
     }
-  }
-
-  public static void ProcessServer()
-  {
-    var reader = new StreamReader(tcpClient.GetStream());
-
-    if (attempts > 0)
+    catch (Exception ex) 
     {
-      try
-      {
-        string? message = reader.ReadLine();
-        Console.WriteLine(message);
-      }
-      catch
-      {
-        tcpClient = new TcpClient();
-        Thread.Sleep(3000);
-        tcpClient.Connect("localhost", 55555);
-        attempts--;
-      }
+      Console.WriteLine("Соединение разорвано, попробуйте переподключиться");
     }
-    else
+    finally
     {
-      isRunning = false;
+      cts.Cancel();
+      chatClient.Dispose();
     }
   }
 }
